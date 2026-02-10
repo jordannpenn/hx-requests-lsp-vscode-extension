@@ -62,7 +62,7 @@ async function startLanguageServer(context: ExtensionContext): Promise<void> {
     outputChannel.appendLine(`Using server: ${serverPath}`);
 
     // Determine how to run the server
-    const serverOptions: ServerOptions = createServerOptions(serverPath, config);
+    const serverOptions: ServerOptions = createServerOptions(serverPath, config, context);
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -215,7 +215,26 @@ async function findPythonPath(config: WorkspaceConfiguration): Promise<string | 
     return 'python';
 }
 
-function createServerOptions(serverPath: string, config: WorkspaceConfiguration): ServerOptions {
+function createServerOptions(serverPath: string, config: WorkspaceConfiguration, context: ExtensionContext): ServerOptions {
+    // Try bundled LSP first
+    const bundledLibsPath = context.asAbsolutePath(path.join('bundled', 'libs'));
+    const useBundled = fs.existsSync(path.join(bundledLibsPath, 'hx_requests_lsp'));
+
+    if (useBundled) {
+        outputChannel.appendLine(`Using bundled LSP from: ${bundledLibsPath}`);
+        return {
+            command: serverPath,
+            args: ['-m', 'hx_requests_lsp.server', '--stdio'],
+            options: {
+                env: {
+                    ...process.env,
+                    PYTHONPATH: bundledLibsPath,
+                },
+            },
+            transport: TransportKind.stdio,
+        };
+    }
+
     // Check if serverPath is a Python interpreter (need to run as module)
     const isPython = serverPath.endsWith('python') || serverPath.endsWith('python.exe') || 
                      serverPath.endsWith('python3') || serverPath.endsWith('python3.exe');
