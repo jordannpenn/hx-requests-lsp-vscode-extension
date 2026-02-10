@@ -1,0 +1,93 @@
+{
+  "name": "hx-requests-lsp",
+  "displayName": "hx-requests LSP",
+  "description": "Language Server Protocol support for hx-requests Django library",
+  "version": "0.1.0",
+  "publisher": "jordannpenn",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jordannpenn/hx-requests-lsp-vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/jordannpenn/hx-requests-lsp-vscode-extension/issues"
+  },
+  "homepage": "https://github.com/jordannpenn/hx-requests-lsp-vscode-extension#readme",
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:django-html",
+    "onLanguage:python",
+    "workspaceContains:**/hx_requests.py",
+    "workspaceContains:**/hx_requests/*.py"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "hx-requests LSP",
+      "properties": {
+        "hxRequestsLsp.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable the hx-requests language server"
+        },
+        "hxRequestsLsp.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the hx-requests-lsp executable. If empty, uses 'hx-requests-lsp' from PATH or the bundled server."
+        },
+        "hxRequestsLsp.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Python interpreter. If empty, uses the Python extension's interpreter or 'python' from PATH."
+        },
+        "hxRequestsLsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the language server."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "hxRequestsLsp.restart",
+        "title": "Restart hx-requests Language Server",
+        "category": "hx-requests"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "compile": "npm run esbuild-base",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "npm run esbuild-base -- --watch",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "esbuild": "^0.20.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "2.19.0"
+  }
+}
