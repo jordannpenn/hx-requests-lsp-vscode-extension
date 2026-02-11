@@ -1,0 +1,3 @@
+[console_scripts]
+hx-requests-lsp=hx_requests_lsp.server:main
+

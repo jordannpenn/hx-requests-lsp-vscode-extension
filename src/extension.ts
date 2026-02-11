@@ -62,7 +62,7 @@ async function startLanguageServer(context: ExtensionContext): Promise<void> {
     outputChannel.appendLine(`Using server: ${serverPath}`);
 
     // Determine how to run the server
-    const serverOptions: ServerOptions = createServerOptions(serverPath, config, context);
+    const serverOptions: ServerOptions = await createServerOptions(serverPath, config, context);
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -215,15 +215,35 @@ async function findPythonPath(config: WorkspaceConfiguration): Promise<string | 
     return 'python';
 }
 
-function createServerOptions(serverPath: string, config: WorkspaceConfiguration, context: ExtensionContext): ServerOptions {
+function isPythonInterpreter(executablePath: string): boolean {
+    const baseName = path.basename(executablePath).toLowerCase();
+    return [
+        'python',
+        'python3',
+        'python.exe',
+        'python3.exe',
+    ].includes(baseName);
+}
+
+async function createServerOptions(
+    serverPath: string,
+    config: WorkspaceConfiguration,
+    context: ExtensionContext
+): Promise<ServerOptions> {
     // Try bundled LSP first
     const bundledLibsPath = context.asAbsolutePath(path.join('bundled', 'libs'));
     const useBundled = fs.existsSync(path.join(bundledLibsPath, 'hx_requests_lsp'));
 
+    // Check if serverPath is a Python interpreter or executable
+    const isPython = isPythonInterpreter(serverPath);
+
     if (useBundled) {
         outputChannel.appendLine(`Using bundled LSP from: ${bundledLibsPath}`);
+        
+        const pythonCommand = (await findPythonPath(config)) ?? 'python';
+        
         return {
-            command: serverPath,
+            command: pythonCommand,
             args: ['-m', 'hx_requests_lsp.server', '--stdio'],
             options: {
                 env: {
@@ -234,10 +254,6 @@ function createServerOptions(serverPath: string, config: WorkspaceConfiguration,
             transport: TransportKind.stdio,
         };
     }
-
-    // Check if serverPath is a Python interpreter (need to run as module)
-    const isPython = serverPath.endsWith('python') || serverPath.endsWith('python.exe') || 
-                     serverPath.endsWith('python3') || serverPath.endsWith('python3.exe');
 
     if (isPython) {
         return {
