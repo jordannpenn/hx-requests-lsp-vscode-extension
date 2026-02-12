@@ -262,6 +262,56 @@ class HxRequestIndex:
         with self._lock:
             return sorted(self._definitions.keys())
 
+    def get_definitions_sorted_by_relevance(
+        self, current_file: str | Path | None = None
+    ) -> list[HxRequestDefinition]:
+        """Get all definitions sorted by relevance to the current file.
+
+        Definitions from the same app (directory) as the current file come first,
+        then the rest are sorted alphabetically.
+
+        Args:
+            current_file: Path to the current file being edited
+
+        Returns:
+            List of definitions sorted by relevance
+        """
+        with self._lock:
+            all_defs = list(self._definitions.values())
+
+            if not current_file:
+                return sorted(all_defs, key=lambda d: d.name)
+
+            current_path = Path(current_file).resolve()
+            current_app = self._extract_app_name(current_path)
+
+            def sort_key(definition: HxRequestDefinition) -> tuple[int, str]:
+                def_app = self._extract_app_name(Path(definition.file_path))
+                is_same_app = 0 if def_app == current_app else 1
+                return (is_same_app, definition.name)
+
+            return sorted(all_defs, key=sort_key)
+
+    def _extract_app_name(self, file_path: Path) -> str | None:
+        """Extract the Django app name from a file path.
+
+        Looks for common patterns like:
+        - /app_name/hx_requests/...
+        - /app_name/templates/...
+        - /app_name/template_partials/...
+
+        Args:
+            file_path: Path to the file
+
+        Returns:
+            App name or None if not determinable
+        """
+        parts = file_path.parts
+        for i, part in enumerate(parts):
+            if part in ("hx_requests", "templates", "template_partials") and i > 0:
+                return parts[i - 1]
+        return None
+
     def get_all_definitions(self) -> list[HxRequestDefinition]:
         """Get all hx_request definitions.
 
