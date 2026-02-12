@@ -48,10 +48,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
 async function startLanguageServer(context: ExtensionContext): Promise<void> {
     const config = workspace.getConfiguration('hxRequestsLsp');
     
-    // Try to find the server executable
+    // Check for bundled LSP first
+    const bundledLibsPath = context.asAbsolutePath(path.join('bundled', 'libs'));
+    const hasBundledLsp = fs.existsSync(path.join(bundledLibsPath, 'hx_requests_lsp'));
+    
+    // Try to find external server (venv, PATH, etc.)
     const serverPath = await findServerPath(config);
     
-    if (!serverPath) {
+    // If no external server and no bundled LSP, show error
+    if (!serverPath && !hasBundledLsp) {
         window.showErrorMessage(
             'hx-requests LSP: Could not find the language server. ' +
             'Please install it with: pip install hx-requests-lsp'
@@ -59,10 +64,10 @@ async function startLanguageServer(context: ExtensionContext): Promise<void> {
         return;
     }
 
-    outputChannel.appendLine(`Using server: ${serverPath}`);
-
     // Determine how to run the server
-    const serverOptions: ServerOptions = await createServerOptions(serverPath, config, context);
+    const serverOptions: ServerOptions = await createServerOptions(serverPath, hasBundledLsp, bundledLibsPath, config);
+
+    outputChannel.appendLine(`Server options configured`);
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -226,18 +231,13 @@ function isPythonInterpreter(executablePath: string): boolean {
 }
 
 async function createServerOptions(
-    serverPath: string,
-    config: WorkspaceConfiguration,
-    context: ExtensionContext
+    serverPath: string | null,
+    hasBundledLsp: boolean,
+    bundledLibsPath: string,
+    config: WorkspaceConfiguration
 ): Promise<ServerOptions> {
-    // Try bundled LSP first
-    const bundledLibsPath = context.asAbsolutePath(path.join('bundled', 'libs'));
-    const useBundled = fs.existsSync(path.join(bundledLibsPath, 'hx_requests_lsp'));
-
-    // Check if serverPath is a Python interpreter or executable
-    const isPython = isPythonInterpreter(serverPath);
-
-    if (useBundled) {
+    // Prefer bundled LSP for zero-config experience
+    if (hasBundledLsp) {
         outputChannel.appendLine(`Using bundled LSP from: ${bundledLibsPath}`);
         
         const pythonCommand = (await findPythonPath(config)) ?? 'python';
@@ -255,7 +255,15 @@ async function createServerOptions(
         };
     }
 
+    // Fall back to external server
+    if (!serverPath) {
+        throw new Error('No server path and no bundled LSP');
+    }
+
+    const isPython = isPythonInterpreter(serverPath);
+
     if (isPython) {
+        outputChannel.appendLine(`Using Python module: ${serverPath} -m hx_requests_lsp.server`);
         return {
             command: serverPath,
             args: ['-m', 'hx_requests_lsp.server', '--stdio'],
@@ -264,6 +272,7 @@ async function createServerOptions(
     }
 
     // It's the direct executable
+    outputChannel.appendLine(`Using executable: ${serverPath}`);
     return {
         command: serverPath,
         args: ['--stdio'],
