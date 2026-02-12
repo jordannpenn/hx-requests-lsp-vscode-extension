@@ -1,0 +1,62 @@
+name: Auto-update LSP and Publish
+
+on:
+  repository_dispatch:
+    types: [lsp-release]
+  workflow_dispatch:
+    inputs:
+      lsp_version:
+        description: 'LSP version to bundle (leave empty for latest)'
+        required: false
+
+jobs:
+  update-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bundle latest LSP
+        run: npm run bundle-lsp
+
+      - name: Get LSP version
+        id: lsp_version
+        run: |
+          LSP_VERSION=$(pip show hx-requests-lsp 2>/dev/null | grep Version | cut -d' ' -f2 || echo "unknown")
+          echo "version=$LSP_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bump extension patch version
+        run: |
+          npm version patch --no-git-tag-version
+
+      - name: Build extension
+        run: npm run compile
+
+      - name: Package extension
+        run: npx @vscode/vsce package
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json bundled/
+          git commit -m "chore: update bundled LSP to ${{ steps.lsp_version.outputs.version }}"
+          git push
+
+      - name: Publish to VS Code Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          npx @vscode/vsce publish -p "$VSCE_PAT"
