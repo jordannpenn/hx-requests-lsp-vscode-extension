@@ -1,4 +1,4 @@
-name: Auto-update LSP and Publish
+name: Auto-update LSP
 
 on:
   repository_dispatch:
@@ -10,7 +10,7 @@ on:
         required: false
 
 jobs:
-  update-and-publish:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,8 +38,13 @@ jobs:
           echo "version=$LSP_VERSION" >> $GITHUB_OUTPUT
 
       - name: Bump extension patch version
+        run: npm version patch --no-git-tag-version
+
+      - name: Get extension version
+        id: ext_version
         run: |
-          npm version patch --no-git-tag-version
+          EXT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$EXT_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build extension
         run: npm run compile
@@ -55,8 +60,21 @@ jobs:
           git commit -m "chore: update bundled LSP to ${{ steps.lsp_version.outputs.version }}"
           git push
 
-      - name: Publish to VS Code Marketplace
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: |
-          npx @vscode/vsce publish -p "$VSCE_PAT"
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hx-requests-lsp-${{ steps.ext_version.outputs.version }}
+          path: '*.vsix'
+          retention-days: 90
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.ext_version.outputs.version }}
+          name: v${{ steps.ext_version.outputs.version }}
+          body: |
+            ## Updated bundled LSP to ${{ steps.lsp_version.outputs.version }}
+            
+            Download the VSIX and upload to [VS Code Marketplace](https://marketplace.visualstudio.com/manage/publishers/jordannpenn).
+          files: '*.vsix'
+          draft: false
