@@ -2,6 +2,7 @@
 
 import logging
 import re
+from importlib.metadata import version as get_version
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -14,6 +15,12 @@ from hx_requests_lsp.template_parser import get_hx_request_name_at_position
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Get version from package metadata
+try:
+    __version__ = get_version("hx-requests-lsp")
+except Exception:
+    __version__ = "0.0.0"  # Fallback for development
 
 
 class HxRequestsLanguageServer(LanguageServer):
@@ -30,7 +37,7 @@ class HxRequestsLanguageServer(LanguageServer):
 
 
 # Create the server instance
-server = HxRequestsLanguageServer("hx-requests-lsp", "v0.1.0")
+server = HxRequestsLanguageServer("hx-requests-lsp", f"v{__version__}")
 
 
 @server.feature(lsp.INITIALIZE)
@@ -64,7 +71,7 @@ def initialize(ls: HxRequestsLanguageServer, params: lsp.InitializeParams):
         ),
         server_info=lsp.ServerInfo(
             name="hx-requests-lsp",
-            version="0.1.0",
+            version=__version__,
         ),
     )
 
