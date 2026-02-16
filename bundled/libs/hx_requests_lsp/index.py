@@ -105,7 +105,7 @@ class HxRequestIndex:
         """
         file_path_str = str(file_path.resolve())
 
-        definitions = parse_hx_requests_from_file(file_path)
+        definitions = parse_hx_requests_from_file(file_path, self._workspace_root)
 
         self._definitions_by_file[file_path_str] = definitions
         self._indexed_python_files.add(file_path_str)
@@ -151,20 +151,17 @@ class HxRequestIndex:
 
     def _update_python_file(self, file_path: Path, file_path_str: str, content: str | None) -> None:
         """Update index for a Python file."""
-        # Remove old definitions from this file
         old_definitions = self._definitions_by_file.get(file_path_str, [])
         for old_def in old_definitions:
             if old_def.name in self._definitions:
                 if self._definitions[old_def.name].file_path == file_path_str:
                     del self._definitions[old_def.name]
 
-        # Parse new definitions
         if content is not None:
-            definitions = parse_hx_requests_from_source(content, file_path_str)
+            definitions = parse_hx_requests_from_source(content, file_path_str, self._workspace_root)
         else:
-            definitions = parse_hx_requests_from_file(file_path)
+            definitions = parse_hx_requests_from_file(file_path, self._workspace_root)
 
-        # Update index
         self._definitions_by_file[file_path_str] = definitions
         self._indexed_python_files.add(file_path_str)
 

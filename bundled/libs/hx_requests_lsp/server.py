@@ -331,11 +331,13 @@ def hover(ls: HxRequestsLanguageServer, params: lsp.HoverParams) -> lsp.Hover | 
     usages = ls.index.get_usages(name)
     usage_count = len(usages)
 
+    base_classes_display = _format_base_classes_with_links(hx_def.base_class_info)
+
     content = f"""**{hx_def.class_name}**
 
 - **Name:** `{hx_def.name}`
 - **File:** `{Path(hx_def.file_path).name}:{hx_def.line_number}`
-- **Bases:** {", ".join(hx_def.base_classes)}
+- **Bases:** {base_classes_display}
 - **Usages:** {usage_count} template reference(s)
 """
 
@@ -458,6 +460,25 @@ def _is_in_hx_request_context(line: str, column: int) -> tuple[bool, bool]:
             return (True, True)
 
     return (False, False)
+
+
+def _format_base_classes_with_links(base_class_info: list) -> str:
+    """Format base classes as clickable markdown links where locations are known."""
+    from hx_requests_lsp.python_parser import BaseClassInfo
+
+    parts = []
+    for info in base_class_info:
+        if not isinstance(info, BaseClassInfo):
+            parts.append(str(info))
+            continue
+
+        if info.file_path and info.line_number:
+            uri = f"file://{info.file_path}#L{info.line_number}"
+            parts.append(f"[{info.name}]({uri})")
+        else:
+            parts.append(f"`{info.name}`")
+
+    return ", ".join(parts) if parts else "None"
 
 
 def _get_hx_name_from_python_line(line: str, column: int) -> str | None:
