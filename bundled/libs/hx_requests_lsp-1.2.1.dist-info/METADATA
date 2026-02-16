@@ -26,7 +26,7 @@ Description-Content-Type: text/markdown
 
 Language Server Protocol implementation for the [hx-requests](https://github.com/yaakovLowenstein/hx-requests) Django library.
 
-[![VS Code Extension](https://img.shields.io/visual-studio-marketplace/v/jordannpenn.hx-requests-lsp?label=VS%20Code%20Extension)](https://marketplace.visualstudio.com/items?itemName=jordannpenn.hx-requests-lsp)
+[![VS Code Extension](https://img.shields.io/visual-studio-marketplace/v/jordanpenn.hx-requests-lsp?label=VS%20Code%20Extension)](https://marketplace.visualstudio.com/items?itemName=jordanpenn.hx-requests-lsp)
 [![PyPI](https://img.shields.io/pypi/v/hx-requests-lsp)](https://pypi.org/project/hx-requests-lsp/)
 
 ## Features
@@ -41,7 +41,7 @@ Language Server Protocol implementation for the [hx-requests](https://github.com
 
 ### VS Code (Recommended)
 
-Install the [hx-requests-lsp extension](https://marketplace.visualstudio.com/items?itemName=jordannpenn.hx-requests-lsp) from the VS Code Marketplace. The extension bundles the language server - no additional setup required.
+Install the [hx-requests-lsp extension](https://marketplace.visualstudio.com/items?itemName=jordanpenn.hx-requests-lsp) from the VS Code Marketplace. The extension bundles the language server - no additional setup required.
 
 ### Other Editors
 

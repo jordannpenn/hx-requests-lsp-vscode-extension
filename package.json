@@ -1,5 +1,5 @@
 {
-  "name": "hx-requests-lsp",
+  "name": "django-hx-requests-lsp",
   "displayName": "hx-requests LSP",
   "description": "Language Server Protocol support for hx-requests Django library",
   "version": "0.2.0",
