@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: hx-requests-lsp
-Version: 1.2.0
+Version: 1.2.1
 Summary: Language Server Protocol implementation for hx-requests Django library
 License: MIT
 License-File: LICENSE

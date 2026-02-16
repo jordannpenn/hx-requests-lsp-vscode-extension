@@ -1,11 +1,11 @@
 ../../bin/hx-requests-lsp,sha256=nBNZSAIapxk5QCv9rfGb_YP33YsWE7Yq2dBs_N_A9RA,203
-hx_requests_lsp-1.2.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
-hx_requests_lsp-1.2.0.dist-info/METADATA,sha256=dqvVBx8GqojUl6i5fvZo4LpHHwjnogNsqHNO5myQhPU,5396
-hx_requests_lsp-1.2.0.dist-info/RECORD,,
-hx_requests_lsp-1.2.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
-hx_requests_lsp-1.2.0.dist-info/WHEEL,sha256=kJCRJT_g0adfAJzTx2GUMmS80rTJIVHRCfG0DQgLq3o,88
-hx_requests_lsp-1.2.0.dist-info/entry_points.txt,sha256=0tUEzMEecSHuPelobA5Iz_NZs3kuAAltVu-lmFJGR3I,63
-hx_requests_lsp-1.2.0.dist-info/licenses/LICENSE,sha256=V38IpRRwBLYIBPDOVtrPlwUFBskPzbd4RQc4He6azhw,1068
+hx_requests_lsp-1.2.1.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+hx_requests_lsp-1.2.1.dist-info/METADATA,sha256=vOtBFmeiySCTi2QeIx_XLt2HNAnZDcvyxUgRnx8uGmk,5396
+hx_requests_lsp-1.2.1.dist-info/RECORD,,
+hx_requests_lsp-1.2.1.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+hx_requests_lsp-1.2.1.dist-info/WHEEL,sha256=kJCRJT_g0adfAJzTx2GUMmS80rTJIVHRCfG0DQgLq3o,88
+hx_requests_lsp-1.2.1.dist-info/entry_points.txt,sha256=0tUEzMEecSHuPelobA5Iz_NZs3kuAAltVu-lmFJGR3I,63
+hx_requests_lsp-1.2.1.dist-info/licenses/LICENSE,sha256=V38IpRRwBLYIBPDOVtrPlwUFBskPzbd4RQc4He6azhw,1068
 hx_requests_lsp/__init__.py,sha256=YF2CXsHVav6GEw_bu1EAxoUiIcsAYZjqD8jjDr_XGj8,379
 hx_requests_lsp/__pycache__/__init__.cpython-311.pyc,,
 hx_requests_lsp/__pycache__/base_class_resolver.cpython-311.pyc,,
@@ -13,7 +13,7 @@ hx_requests_lsp/__pycache__/index.cpython-311.pyc,,
 hx_requests_lsp/__pycache__/python_parser.cpython-311.pyc,,
 hx_requests_lsp/__pycache__/server.cpython-311.pyc,,
 hx_requests_lsp/__pycache__/template_parser.cpython-311.pyc,,
-hx_requests_lsp/base_class_resolver.py,sha256=h3OX-s9RAd-FaaT0FYQZ97qcbEndmgaZHVQicE3iChE,4706
+hx_requests_lsp/base_class_resolver.py,sha256=7i0RNN8GhlllCXmkNDN8Ohi_2idlljEB9ECa9BA-25A,5167
 hx_requests_lsp/index.py,sha256=FEIFhEdTSRbkbYJrNQw4iplWKVZ61YBEbHuZxFMFDRI,13212
 hx_requests_lsp/python_parser.py,sha256=YtKOS2Eptwg0O1jbWFZvTF79tjAzdHdUhfHcULNH-iM,10432
 hx_requests_lsp/server.py,sha256=cD1f2oE0LsbhPo6FYiXOlkwSxrjGwalyFYAosy7St04,18408

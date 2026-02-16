@@ -1,21 +1,11 @@
 """Resolver for finding base class file locations."""
 
 import ast
+import importlib.util
 from functools import lru_cache
 from pathlib import Path
 
 from hx_requests_lsp.python_parser import BaseClassInfo
-
-
-@lru_cache(maxsize=1)
-def _find_hx_requests_package_path() -> Path | None:
-    """Find the installed hx-requests package location."""
-    try:
-        import hx_requests
-
-        return Path(hx_requests.__file__).parent
-    except ImportError:
-        return None
 
 
 @lru_cache(maxsize=256)
@@ -32,6 +22,40 @@ def _parse_file_for_classes(file_path: str) -> dict[str, int]:
         if isinstance(node, ast.ClassDef):
             classes[node.name] = node.lineno
     return classes
+
+
+@lru_cache(maxsize=64)
+def _find_module_path(module_name: str) -> Path | None:
+    """Find the file path of an installed Python module."""
+    try:
+        spec = importlib.util.find_spec(module_name)
+        if spec and spec.origin and spec.origin != "built-in":
+            return Path(spec.origin)
+    except (ModuleNotFoundError, ValueError, ImportError):
+        pass
+    return None
+
+
+@lru_cache(maxsize=128)
+def _find_class_in_installed_module(module_name: str, class_name: str) -> tuple[str, int] | None:
+    """Find a class in an installed module by searching its package."""
+    module_path = _find_module_path(module_name)
+    if not module_path:
+        return None
+
+    classes = _parse_file_for_classes(str(module_path))
+    if class_name in classes:
+        return (str(module_path.resolve()), classes[class_name])
+
+    pkg_dir = module_path.parent
+    for py_file in pkg_dir.rglob("*.py"):
+        if "__pycache__" in str(py_file):
+            continue
+        classes = _parse_file_for_classes(str(py_file))
+        if class_name in classes:
+            return (str(py_file.resolve()), classes[class_name])
+
+    return None
 
 
 def _find_class_in_module(module_path: Path, class_name: str) -> tuple[str, int] | None:
@@ -56,23 +80,6 @@ def _find_class_in_module(module_path: Path, class_name: str) -> tuple[str, int]
     return None
 
 
-@lru_cache(maxsize=64)
-def _find_class_in_hx_requests_package(class_name: str) -> tuple[str, int] | None:
-    """Find a class in the hx-requests package (cached for performance)."""
-    hx_pkg_path = _find_hx_requests_package_path()
-    if not hx_pkg_path:
-        return None
-
-    for py_file in hx_pkg_path.rglob("*.py"):
-        if "__pycache__" in str(py_file):
-            continue
-        classes = _parse_file_for_classes(str(py_file))
-        if class_name in classes:
-            return (str(py_file.resolve()), classes[class_name])
-
-    return None
-
-
 def resolve_base_class(
     class_name: str,
     source_file: str,
@@ -84,8 +91,8 @@ def resolve_base_class(
 
     Resolution priority:
     1. Same file
-    2. hx-requests library
-    3. Workspace imports
+    2. Imported module (uses Python's import machinery)
+    3. Workspace paths
     """
     source_path = Path(source_file)
 
@@ -98,16 +105,18 @@ def resolve_base_class(
             line_number=classes[class_name],
         )
 
-    # 2. Check if it's from hx-requests library (cached)
-    hx_result = _find_class_in_hx_requests_package(class_name)
-    if hx_result:
-        return BaseClassInfo(
-            name=class_name,
-            file_path=hx_result[0],
-            line_number=hx_result[1],
-        )
+    # 2. Check imports and resolve via Python's import machinery
+    if class_name in imports:
+        module_name = imports[class_name]
+        result = _find_class_in_installed_module(module_name, class_name)
+        if result:
+            return BaseClassInfo(
+                name=class_name,
+                file_path=result[0],
+                line_number=result[1],
+            )
 
-    # 3. Check imports and try to resolve from workspace
+    # 3. Try workspace paths for local imports
     if class_name in imports and workspace_root:
         module_path_str = imports[class_name]
         module_parts = module_path_str.split(".")
