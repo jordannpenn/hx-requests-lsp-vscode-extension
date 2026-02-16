@@ -3,7 +3,7 @@
   "displayName": "hx-requests LSP",
   "description": "Language Server Protocol support for hx-requests Django library",
   "version": "0.1.7",
-  "publisher": "jordannpenn",
+  "publisher": "jordanpenn",
   "license": "MIT",
   "repository": {
     "type": "git",

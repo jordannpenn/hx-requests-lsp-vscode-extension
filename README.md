@@ -72,7 +72,7 @@ To include this extension in your dev container, add it to your `devcontainer.js
   "customizations": {
     "vscode": {
       "extensions": [
-        "jordannpenn.hx-requests-lsp"
+        "jordanpenn.hx-requests-lsp"
       ]
     }
   }
