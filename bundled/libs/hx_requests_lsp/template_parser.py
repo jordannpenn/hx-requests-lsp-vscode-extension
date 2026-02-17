@@ -16,6 +16,7 @@ class HxRequestUsage:
     end_column: int  # Column where the name ends (0-based)
     tag_type: str  # Type of tag: "hx_post", "hx_vals", "hx_request", "hx_get"
     full_match: str  # The full matched template tag content
+    is_variable: bool = False  # True if this is a template variable, not a literal string
 
     def __hash__(self):
         return hash((self.name, self.file_path, self.line_number, self.column))
@@ -98,35 +99,39 @@ def parse_template_for_hx_requests(content: str, file_path: str = "<string>") ->
         # Find hx_post, hx_get, hx_request tags
         for match in HX_TAG_PATTERN.finditer(line):
             tag_type = match.group(1)
-            name = match.group(2) or match.group(3)  # Quoted or unquoted name
+            quoted_name = match.group(2)  # Name in quotes (literal)
+            unquoted_name = match.group(3)  # Name without quotes (variable)
+
+            name = quoted_name or unquoted_name
+            is_variable = quoted_name is None and unquoted_name is not None
 
             if name:
-                # Skip variable references (containing dots or starting with view.)
-                if "." in name and not name.startswith("view."):
-                    # It's a variable reference like some_var.name, skip it
-                    pass
-                elif name.startswith("view."):
-                    # It's a view attribute reference, we could potentially resolve it
-                    # For now, skip it
-                    pass
-                else:
-                    # Find the exact position of the name in the line
-                    name_start = _find_name_position(line, match.start(), name)
-                    usages.append(
-                        HxRequestUsage(
-                            name=name,
-                            file_path=file_path,
-                            line_number=line_num,
-                            column=name_start,
-                            end_column=name_start + len(name),
-                            tag_type=tag_type,
-                            full_match=match.group(0),
-                        )
+                # Skip variable references containing dots
+                if "." in name:
+                    continue
+
+                # Find the exact position of the name in the line
+                name_start = _find_name_position(line, match.start(), name)
+                usages.append(
+                    HxRequestUsage(
+                        name=name,
+                        file_path=file_path,
+                        line_number=line_num,
+                        column=name_start,
+                        end_column=name_start + len(name),
+                        tag_type=tag_type,
+                        full_match=match.group(0),
+                        is_variable=is_variable,
                     )
+                )
 
         # Find hx_vals with hx_request_name
         for match in HX_VALS_PATTERN.finditer(line):
-            name = match.group(1) or match.group(2)  # Quoted or unquoted name
+            quoted_name = match.group(1)  # Name in quotes (literal)
+            unquoted_name = match.group(2)  # Name without quotes (variable)
+
+            name = quoted_name or unquoted_name
+            is_variable = quoted_name is None and unquoted_name is not None
 
             if name and "." not in name:
                 # Find the exact position of the name in the line
@@ -140,6 +145,7 @@ def parse_template_for_hx_requests(content: str, file_path: str = "<string>") ->
                         end_column=name_start + len(name),
                         tag_type="hx_vals",
                         full_match=match.group(0),
+                        is_variable=is_variable,
                     )
                 )
 

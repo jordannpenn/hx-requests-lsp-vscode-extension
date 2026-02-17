@@ -390,6 +390,9 @@ def _compute_diagnostics(
 
     usages = ls.index.get_usages_in_file(file_path)
     for usage in usages:
+        # Skip template variables - only validate literal string names
+        if usage.is_variable:
+            continue
         if not ls.index.get_definition(usage.name):
             diagnostics.append(
                 lsp.Diagnostic(
