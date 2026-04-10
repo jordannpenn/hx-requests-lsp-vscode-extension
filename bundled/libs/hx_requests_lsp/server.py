@@ -65,11 +65,11 @@ def initialize(ls: HxRequestsLanguageServer, params: lsp.InitializeParams):
             references_provider=True,
             hover_provider=True,
             diagnostic_provider=lsp.DiagnosticOptions(
-                inter_file_dependencies=True,
+                inter_file_dependencies=False,
                 workspace_diagnostics=False,
             ),
         ),
-        server_info=lsp.ServerInfo(
+        server_info=lsp.InitializeResultServerInfoType(
             name="hx-requests-lsp",
             version=__version__,
         ),
