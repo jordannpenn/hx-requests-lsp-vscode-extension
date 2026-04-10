@@ -47,6 +47,7 @@ from ._compat import (
     is_mutable_set,
     is_optional,
     is_protocol,
+    is_subclass,
     is_tuple,
     is_typeddict,
     is_union_type,
@@ -76,6 +77,7 @@ from .dispatch import (
     UnstructuredValue,
     UnstructureHook,
 )
+from .enums import enum_structure_factory, enum_unstructure_factory
 from .errors import (
     IterableValidationError,
     IterableValidationNote,
@@ -246,12 +248,12 @@ class BaseConverter:
                     lambda t: self.get_unstructure_hook(get_type_alias_base(t)),
                     True,
                 ),
-                (is_literal_containing_enums, self.unstructure),
                 (is_mapping, self._unstructure_mapping),
                 (is_sequence, self._unstructure_seq),
                 (is_mutable_set, self._unstructure_seq),
                 (is_frozenset, self._unstructure_seq),
-                (lambda t: issubclass(t, Enum), self._unstructure_enum),
+                (is_literal_containing_enums, self.unstructure),
+                (lambda t: is_subclass(t, Enum), enum_unstructure_factory, "extended"),
                 (has, self._unstructure_attrs),
                 (is_union_type, self._unstructure_union),
                 (lambda t: t in ANIES, self.unstructure),
@@ -298,6 +300,7 @@ class BaseConverter:
                     self._union_struct_registry.__getitem__,
                     True,
                 ),
+                (lambda t: is_subclass(t, Enum), enum_structure_factory, "extended"),
                 (has, self._structure_attrs),
             ]
         )
@@ -308,7 +311,6 @@ class BaseConverter:
                 (bytes, self._structure_call),
                 (int, self._structure_call),
                 (float, self._structure_call),
-                (Enum, self._structure_call),
                 (Path, self._structure_call),
             ]
         )
@@ -629,10 +631,6 @@ class BaseConverter:
             v = getattr(obj, name)
             res.append(dispatch(a.type or v.__class__)(v))
         return tuple(res)
-
-    def _unstructure_enum(self, obj: Enum) -> Any:
-        """Convert an enum to its value."""
-        return obj.value
 
     def _unstructure_seq(self, seq: Sequence[T]) -> Sequence[T]:
         """Convert a sequence to primitive equivalents."""
@@ -1303,10 +1301,11 @@ class Converter(BaseConverter):
     def gen_structure_attrs_fromdict(
         self, cl: type[T]
     ) -> Callable[[Mapping[str, Any], Any], T]:
-        attribs = fields(get_origin(cl) or cl if is_generic(cl) else cl)
+        origin = get_origin(cl)
+        attribs = fields(origin or cl if is_generic(cl) else cl)
         if attrs_has(cl) and any(isinstance(a.type, str) for a in attribs):
             # PEP 563 annotations - need to be resolved.
-            resolve_types(cl)
+            resolve_types(origin or cl)
         attrib_overrides = {
             a.name: self.type_overrides[a.type]
             for a in attribs

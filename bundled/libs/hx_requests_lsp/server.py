@@ -93,9 +93,6 @@ def did_open(ls: HxRequestsLanguageServer, params: lsp.DidOpenTextDocumentParams
     # Update index with the opened file
     ls.index.update_file(file_path, params.text_document.text)
 
-    # Publish diagnostics for the opened file
-    _publish_diagnostics(ls, params.text_document.uri, params.text_document.text)
-
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_CHANGE)
 def did_change(ls: HxRequestsLanguageServer, params: lsp.DidChangeTextDocumentParams):
@@ -105,9 +102,6 @@ def did_change(ls: HxRequestsLanguageServer, params: lsp.DidChangeTextDocumentPa
 
     # Update index with changed content
     ls.index.update_file(file_path, content)
-
-    # Publish diagnostics
-    _publish_diagnostics(ls, params.text_document.uri, content)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_SAVE)
@@ -369,13 +363,6 @@ def diagnostics(
         kind=lsp.DocumentDiagnosticReportKind.Full,
         items=items,
     )
-
-
-def _publish_diagnostics(ls: HxRequestsLanguageServer, uri: str, content: str):
-    """Publish diagnostics for a document."""
-    file_path = ls.uri_to_path(uri)
-    items = _compute_diagnostics(ls, file_path, content)
-    ls.publish_diagnostics(uri, items)
 
 
 def _compute_diagnostics(

@@ -1,4 +1,4 @@
-#!/opt/hostedtoolcache/Python/3.11.14/x64/bin/python
+#!/opt/hostedtoolcache/Python/3.11.15/x64/bin/python
 import sys
 from hx_requests_lsp.server import main
 if __name__ == '__main__':

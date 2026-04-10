@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: cattrs
-Version: 25.3.0
+Version: 26.1.0
 Summary: Composable complex class support for attrs and dataclasses.
 Project-URL: Homepage, https://catt.rs
 Project-URL: Changelog, https://catt.rs/en/latest/history.html
@@ -14,7 +14,6 @@ Keywords: attrs,dataclasses,serialization
 Classifier: Development Status :: 5 - Production/Stable
 Classifier: Intended Audience :: Developers
 Classifier: License :: OSI Approved :: MIT License
-Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
@@ -23,7 +22,7 @@ Classifier: Programming Language :: Python :: 3.14
 Classifier: Programming Language :: Python :: Implementation :: CPython
 Classifier: Programming Language :: Python :: Implementation :: PyPy
 Classifier: Typing :: Typed
-Requires-Python: >=3.9
+Requires-Python: >=3.10
 Requires-Dist: attrs>=25.4.0
 Requires-Dist: exceptiongroup>=1.1.1; python_version < '3.11'
 Requires-Dist: typing-extensions>=4.14.0
@@ -41,6 +40,9 @@ Provides-Extra: pyyaml
 Requires-Dist: pyyaml>=6.0; extra == 'pyyaml'
 Provides-Extra: tomlkit
 Requires-Dist: tomlkit>=0.11.8; extra == 'tomlkit'
+Provides-Extra: tomllib
+Requires-Dist: tomli-w>=1.1.0; extra == 'tomllib'
+Requires-Dist: tomli>=1.1.0; (python_version < '3.11') and extra == 'tomllib'
 Provides-Extra: ujson
 Requires-Dist: ujson>=5.10.0; extra == 'ujson'
 Description-Content-Type: text/markdown

@@ -3,22 +3,11 @@ from __future__ import annotations
 import re
 import sys
 from collections.abc import Mapping
+from inspect import get_annotations
 from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar
 
 from attrs import NOTHING, Attribute
 from typing_extensions import _TypedDictMeta
-
-try:
-    from inspect import get_annotations
-
-    def get_annots(cl) -> dict[str, Any]:
-        return get_annotations(cl, eval_str=True)
-
-except ImportError:
-    # https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
-    def get_annots(cl) -> dict[str, Any]:
-        return cl.__dict__.get("__annotations__", {})
-
 
 from .._compat import (
     get_full_type_hints,
@@ -40,7 +29,7 @@ from . import AttributeOverride
 from ._consts import already_generating, neutral
 from ._generics import generate_mapping
 from ._lc import generate_unique_filename
-from ._shared import find_structure_handler
+from ._shared import _annotated_override_or_default, find_structure_handler
 
 if TYPE_CHECKING:
     from ..converters import BaseConverter
@@ -48,6 +37,10 @@ if TYPE_CHECKING:
 __all__ = ["make_dict_structure_fn", "make_dict_unstructure_fn"]
 
 T = TypeVar("T")
+
+
+def get_annots(cl) -> dict[str, Any]:
+    return get_annotations(cl, eval_str=True)
 
 
 def make_dict_unstructure_fn(
@@ -109,11 +102,20 @@ def make_dict_unstructure_fn(
         # * all attributes resolve to `converter._unstructure_identity`
         for a in attrs:
             attr_name = a.name
-            override = kwargs.get(attr_name, neutral)
+            t = a.type
+            nrb = get_notrequired_base(t)
+            if nrb is not NOTHING:
+                t = nrb
+
+            if attr_name in kwargs:
+                override = kwargs[attr_name]
+            else:
+                override = _annotated_override_or_default(t, neutral)
+                if override != neutral:
+                    kwargs[attr_name] = override
             if override != neutral:
                 break
             handler = None
-            t = a.type
 
             if isinstance(t, TypeVar):
                 if t.__name__ in mapping:
@@ -125,9 +127,6 @@ def make_dict_unstructure_fn(
                 t = deep_copy_with(t, mapping, cl)
 
             if handler is None:
-                nrb = get_notrequired_base(t)
-                if nrb is not NOTHING:
-                    t = nrb
                 try:
                     handler = converter.get_unstructure_hook(t)
                 except RecursionError:
@@ -142,10 +141,22 @@ def make_dict_unstructure_fn(
 
         for ix, a in enumerate(attrs):
             attr_name = a.name
-            override = kwargs.get(attr_name, neutral)
+            t = a.type
+            nrb = get_notrequired_base(t)
+            if nrb is not NOTHING:
+                t = nrb
+
+            if attr_name in kwargs:
+                override = kwargs[attr_name]
+            else:
+                override = _annotated_override_or_default(t, neutral)
+                if override != neutral:
+                    kwargs[attr_name] = override
+
             if override.omit:
                 lines.append(f"  res.pop('{attr_name}', None)")
                 continue
+
             if override.rename is not None:
                 # We also need to pop when renaming, since we're copying
                 # the original.
@@ -160,8 +171,6 @@ def make_dict_unstructure_fn(
             if override.unstruct_hook is not None:
                 handler = override.unstruct_hook
             else:
-                t = a.type
-
                 if isinstance(t, TypeVar):
                     if t.__name__ in mapping:
                         t = mapping[t.__name__]
@@ -171,9 +180,6 @@ def make_dict_unstructure_fn(
                     t = deep_copy_with(t, mapping, cl)
 
                 if handler is None:
-                    nrb = get_notrequired_base(t)
-                    if nrb is not NOTHING:
-                        t = nrb
                     try:
                         handler = converter.get_unstructure_hook(t)
                     except RecursionError:
@@ -220,12 +226,15 @@ def make_dict_unstructure_fn(
         )
 
         eval(compile(script, fname, "exec"), globs)
+
+        res = globs[fn_name]
+        res.overrides = kwargs
     finally:
         working_set.remove(cl)
         if not working_set:
             del already_generating.working_set
 
-    return globs[fn_name]
+    return res
 
 
 def make_dict_structure_fn(
@@ -326,19 +335,24 @@ def make_dict_structure_fn(
         for ix, a in enumerate(attrs):
             an = a.name
             attr_required = an in req_keys
-            override = kwargs.get(an, neutral)
+            t = a.type
+            nrb = get_notrequired_base(t)
+            if nrb is not NOTHING:
+                t = nrb
+
+            if an in kwargs:
+                override = kwargs[an]
+            else:
+                override = _annotated_override_or_default(t, neutral)
+                if override != neutral:
+                    kwargs[an] = override
             if override.omit:
                 continue
-            t = a.type
 
             if isinstance(t, TypeVar):
                 t = mapping.get(t.__name__, t)
             elif is_generic(t) and not is_bare(t) and not is_annotated(t):
                 t = deep_copy_with(t, mapping, cl)
-
-            nrb = get_notrequired_base(t)
-            if nrb is not NOTHING:
-                t = nrb
 
             if is_generic(t) and not is_bare(t) and not is_annotated(t):
                 t = deep_copy_with(t, mapping, cl)
@@ -399,7 +413,12 @@ def make_dict_structure_fn(
         for ix, a in enumerate(attrs):
             an = a.name
             attr_required = an in req_keys
-            override = kwargs.get(an, neutral)
+            if an in kwargs:
+                override = kwargs[an]
+            else:
+                override = _annotated_override_or_default(a.type, neutral)
+                if override != neutral:
+                    kwargs[an] = override
             if override.omit:
                 continue
             if not attr_required:
@@ -448,12 +467,17 @@ def make_dict_structure_fn(
         if non_required:
             for ix, a in non_required:
                 an = a.name
-                override = kwargs.get(an, neutral)
                 t = a.type
-
                 nrb = get_notrequired_base(t)
                 if nrb is not NOTHING:
                     t = nrb
+
+                if an in kwargs:
+                    override = kwargs[an]
+                else:
+                    override = _annotated_override_or_default(t, neutral)
+                    if override != neutral:
+                        kwargs[an] = override
 
                 if isinstance(t, TypeVar):
                     t = mapping.get(t.__name__, t)
@@ -514,7 +538,9 @@ def make_dict_structure_fn(
     )
 
     eval(compile(script, fname, "exec"), globs)
-    return globs[fn_name]
+    res = globs[fn_name]
+    res.overrides = kwargs
+    return res
 
 
 def _adapted_fields(cls: Any) -> list[Attribute]:
